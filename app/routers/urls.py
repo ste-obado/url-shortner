@@ -1,10 +1,12 @@
 from database import  get_db
 from sqlalchemy.orm import Session
-from fastapi import APIRouter,Depends,HTTPException,status
+from fastapi import APIRouter,Depends,HTTPException,status,Request,BackgroundTasks,RedirectResponse
 from protection import get_current_user
 from models import URL
 from schema import URL
 from dependencies import generate_code
+from backgroudtask import record_click
+
 
 
 router=APIRouter(
@@ -29,7 +31,17 @@ def shorten_url(url: URL, db: Session = Depends(get_db), current_user=Depends(ge
     db.refresh(new_url)
 
     #generate code with database id
-    code=generate_code(existing_url.id)
+    existing_custom_code=db.query(URL).filter(URL.custom_code ==  url.custom_code).first()
+    if existing_custom_code:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Custom code already exists")
+        
+    else:
+        code = url.custom_code
+
+    #check if user needs a generated code 
+    if url.custom_code is None:
+        code = generate_code(new_url.id)    
+
 
     new_code = URL(
             # Associate the URL with the current user
@@ -41,3 +53,21 @@ def shorten_url(url: URL, db: Session = Depends(get_db), current_user=Depends(ge
 
     return {"original_url": new_url.original_url, 
             "shortened_code":new_url.Code}
+
+@router.get("/{code}")
+def redirect_to_original_url(code: str, request: Request, 
+                             background_tasks: BackgroundTasks,
+                              db: Session = Depends(get_db)):
+    # Retrieve the original URL based on the shortened code
+    url_entry = db.query(URL).filter(URL.Code == code).first()
+    if not url_entry:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Shortened URL not found")
+
+    # request fro user_agent hearder
+    user_agent = request.headers.get("User-Agent", "Unknown")
+
+    #record click using background task
+    background_tasks.add_task(record_click, short_code=code, user_agent=user_agent)
+
+    # Return the original URL for redirection
+    return RedirectResponse(url=url_entry.original_url, status_code=307)

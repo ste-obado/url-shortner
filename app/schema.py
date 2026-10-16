@@ -1,4 +1,5 @@
-from pydantic import BaseModel,EmailStr, HttpUrl,field_validator,model_validator    
+from pydantic import BaseModel,EmailStr, HttpUrl,field_validator,model_validator  
+from typing import Optinal  
 
 
 ###############################
@@ -44,5 +45,6 @@ class Userlogin(BaseModel):
     
 class URL(BaseModel):
      original_url:HttpUrl
+     custom_code:Optinal[str] = None    
 
      

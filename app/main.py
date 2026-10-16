@@ -6,7 +6,7 @@ from routers import auth,stats,urls
 from fastapi import FastAPI
 
 
-app=FastAPI("URL_SHORTENER")
+app = FastAPI("URL_SHORTENER")
 
 #CREATE TABLES 
 models.Base.metadata.create_all(bind=engine)
