@@ -1,0 +1,14 @@
+/.venv
+# Python
+__pycache__/
+*.pyc
+*.db
+
+# env files — never commit real secrets
+.env
+.env.*
+!.env.example
+
+# OS
+.DS_Store
+

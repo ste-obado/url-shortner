@@ -5,8 +5,9 @@ from protection import get_current_user
 from models import URL
 from schema import URL
 from dependencies import generate_code
-from backgroudtask import record_click
-
+from app.util.backgroudtask import record_click
+from app.util.ratelimiter import rate_limit
+from redis_cache import redis_client
 
 
 router=APIRouter(
@@ -14,7 +15,7 @@ router=APIRouter(
     tags=["URL Shortening"]
 )
 
-@router.post("/shorten")
+@router.post("/shorten", dependencies=[Depends(rate_limit(10,60))])
 def shorten_url(url: URL, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
     # Check if the URL already exists in the database
     existing_url = db.query(URL).filter(URL.original_url == url.original_url).first()
@@ -58,6 +59,12 @@ def shorten_url(url: URL, db: Session = Depends(get_db), current_user=Depends(ge
 def redirect_to_original_url(code: str, request: Request, 
                              background_tasks: BackgroundTasks,
                               db: Session = Depends(get_db)):
+    code_key=f"code:{code}"
+    GET_CODE=redis_client.get(code_key)
+
+    if GET_CODE:
+        return RedirectResponse(url=GET_CODE, status_code=307)
+    
     # Retrieve the original URL based on the shortened code
     url_entry = db.query(URL).filter(URL.Code == code).first()
     if not url_entry:
@@ -68,6 +75,8 @@ def redirect_to_original_url(code: str, request: Request,
 
     #record click using background task
     background_tasks.add_task(record_click, short_code=code, user_agent=user_agent)
+
+    redis_client.set(code_key,{"url":url_entry.original_url,"status":307})
 
     # Return the original URL for redirection
     return RedirectResponse(url=url_entry.original_url, status_code=307)
