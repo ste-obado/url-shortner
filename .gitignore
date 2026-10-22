@@ -1,14 +1,15 @@
-/.venv
-# Python
-__pycache__/
-*.pyc
-*.db
-
-# env files — never commit real secrets
 .env
 .env.*
 !.env.example
-
-# OS
+__pycache__/
+*.pyc
+*.db
+.venv/
+node_modules/
+dist/
+.pytest_cache/
 .DS_Store
-
+.venv/
+__pycache__/
+.env
+node_modules/

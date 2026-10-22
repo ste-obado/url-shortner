@@ -1,0 +1,21 @@
+# One command backend: docker compose up --build   (API on http://localhost:8000/docs)
+services:
+  db:
+    image: postgres:16-alpine
+    environment: { POSTGRES_USER: kata, POSTGRES_PASSWORD: kata, POSTGRES_DB: kata }
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck: { test: ["CMD-SHELL", "pg_isready -U kata"], interval: 3s, retries: 10 }
+  redis:
+    image: redis:7-alpine
+  api:
+    build: ./backend
+    ports: ["8000:8000"]
+    environment:
+      DATABASE_URL: postgresql+psycopg2://kata:kata@db:5432/kata
+      REDIS_URL: redis://redis:6379/0
+      SECRET_KEY: change-me-in-production
+      BASE_URL: http://localhost:8000
+      CORS_ORIGINS: http://localhost:5173
+    depends_on: { db: { condition: service_healthy }, redis: { condition: service_started } }
+volumes:
+  pgdata:
