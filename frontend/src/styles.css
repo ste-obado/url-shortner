@@ -112,3 +112,21 @@ input { border: 1px solid var(--line); background: var(--surface); border-radius
   .detail { position: static; }
 }
 @media (max-width: 520px) { .create, .breakdowns { grid-template-columns: 1fr; } }
+
+/* Billing */
+.plan-badge { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 0.3rem 0.9rem; font-weight: 600; font-size: 0.9rem; cursor: pointer; color: var(--ink); }
+.plan-badge:hover { border-color: var(--cobalt); }
+.billing { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--cut); border-radius: 12px; padding: 1.3rem 1.5rem; margin-bottom: 1.5rem; }
+.billing-head { display: flex; justify-content: space-between; align-items: baseline; }
+.billing h2 { font-size: 1.3rem; }
+.billing .muted { margin: 0.2rem 0 0; }
+.notice { margin: 1rem 0 0; padding: 0.7rem 1rem; border-radius: 8px; background: color-mix(in srgb, var(--cobalt) 10%, transparent); }
+.plans { list-style: none; margin: 1.1rem 0 0; padding: 0; }
+.plans li { display: grid; grid-template-columns: 1fr auto auto; gap: 1.2rem; align-items: center; padding: 0.9rem 0; border-top: 1px solid var(--line); }
+.plans li.picked { background: color-mix(in srgb, var(--cobalt) 6%, transparent); }
+.plans h3 { font-size: 1.15rem; }
+.price { margin: 0; font-family: var(--display); font-weight: 800; font-size: 1.5rem; }
+.price small { font-family: var(--body); font-weight: 400; font-size: 0.85rem; color: var(--muted); }
+.free-note { padding-top: 0.8rem; border-top: 1px solid var(--line); }
+.pay { display: grid; grid-template-columns: 1fr auto; gap: 0.9rem; align-items: end; margin-top: 1rem; }
+@media (max-width: 600px) { .plans li, .pay { grid-template-columns: 1fr; } }

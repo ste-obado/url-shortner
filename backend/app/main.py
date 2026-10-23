@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
 from .database import Base, engine
-from .routers import auth, links, redirect, stats
+from .routers import auth, billing, links, redirect, stats
 
 
 @asynccontextmanager
@@ -32,4 +32,5 @@ def health():
 app.include_router(auth.router)
 app.include_router(links.router)
 app.include_router(stats.router)
+app.include_router(billing.router)
 app.include_router(redirect.router)  # LAST: its /{code} would swallow other root paths

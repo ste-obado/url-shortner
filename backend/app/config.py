@@ -13,6 +13,16 @@ class Settings(BaseSettings):
     CORS_ORIGINS: str = "http://localhost:5173"
     CACHE_TTL_SECONDS: int = 3600
 
+    # M-Pesa (Daraja). MPESA_ENV: "sandbox" | "production" | "mock" (fake payments for UI demos only)
+    MPESA_ENV: str = "sandbox"
+    MPESA_CONSUMER_KEY: str = ""
+    MPESA_CONSUMER_SECRET: str = ""
+    MPESA_SHORTCODE: str = ""
+    MPESA_PASSKEY: str = ""
+    MPESA_TRANSACTION_TYPE: str = "CustomerPayBillOnline"  # use CustomerBuyGoodsOnline for a Till number
+    MPESA_CALLBACK_BASE_URL: str = ""  # PUBLIC https URL of this API (ngrok in dev)
+    MPESA_CALLBACK_SECRET: str = ""    # random string; becomes part of the callback URL
+
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 

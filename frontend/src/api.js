@@ -23,7 +23,7 @@ async function request(path, { method = "GET", body } = {}) {
   }
   if (res.status === 204) return null;
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(readError(data, res.status));
+  if (!res.ok) { const err = new Error(readError(data, res.status)); err.status = res.status; throw err; }
   return data;
 }
 
@@ -42,4 +42,8 @@ export const api = {
   updateLink: (code, b) => request(`/api/links/${code}`, { method: "PATCH", body: b }),
   deleteLink: (code) => request(`/api/links/${code}`, { method: "DELETE" }),
   stats: (code) => request(`/api/stats/${code}`),
+  plans: () => request("/api/billing/plans"),
+  billing: () => request("/api/billing/me"),
+  checkout: (b) => request("/api/billing/checkout", { method: "POST", body: b }),
+  payment: (id) => request(`/api/billing/payments/${id}`),
 };

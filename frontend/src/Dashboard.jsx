@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { api } from "./api.js";
+import Billing from "./Billing.jsx";
 
 const host = (u) => { try { return new URL(u).host; } catch { return u; } };
 const shortDate = (d) => new Date(d).toLocaleDateString(undefined, { month: "short", day: "numeric" });
@@ -10,16 +11,18 @@ function status(link) {
   return { text: "Live", cls: "on" };
 }
 
-function CreateForm({ onCreated }) {
+function CreateForm({ onCreated, onUpgrade }) {
   const empty = { original_url: "", custom_code: "", title: "", expires: "" };
   const [f, setF] = useState(empty);
   const [error, setError] = useState("");
+  const [limit, setLimit] = useState(false);
   const [busy, setBusy] = useState(false);
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
 
   async function submit(e) {
     e.preventDefault();
     setError("");
+    setLimit(false);
     setBusy(true);
     try {
       const link = await api.createLink({
@@ -32,6 +35,7 @@ function CreateForm({ onCreated }) {
       onCreated(link);
     } catch (err) {
       setError(err.message);
+      setLimit(err.status === 402);
     } finally {
       setBusy(false);
     }
@@ -52,7 +56,9 @@ function CreateForm({ onCreated }) {
         <input type="date" value={f.expires} onChange={set("expires")} min={new Date().toISOString().slice(0, 10)} />
       </label>
       <button className="btn primary" disabled={busy}>{busy ? "Cutting…" : "Shorten link"}</button>
-      {error && <p className="error full" role="alert">{error}</p>}
+      {error && (
+        <p className="error full" role="alert">{error} {limit && <button type="button" className="link" onClick={onUpgrade}>See plans</button>}</p>
+      )}
     </form>
   );
 }
@@ -151,6 +157,10 @@ export default function Dashboard({ user, onSignOut }) {
   const [links, setLinks] = useState(null);
   const [selected, setSelected] = useState(null);
   const [error, setError] = useState("");
+  const [bill, setBill] = useState(null);
+  const [showPlans, setShowPlans] = useState(false);
+
+  const loadBilling = useCallback(() => api.billing().then(setBill).catch(() => {}), []);
 
   const load = useCallback(async () => {
     try {
@@ -160,7 +170,7 @@ export default function Dashboard({ user, onSignOut }) {
     } catch (e) { setError(e.message); }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { load(); loadBilling(); }, [load, loadBilling]);
 
   const current = links?.find((l) => l.code === selected);
   const replace = (l) => setLinks((ls) => ls.map((x) => (x.code === l.code ? { ...x, ...l, total_clicks: x.total_clicks } : x)));
@@ -172,11 +182,19 @@ export default function Dashboard({ user, onSignOut }) {
         <p className="brand">Kata</p>
         <div className="who">
           <span>{user.name}</span>
+          {bill && (
+            <button className="plan-badge" onClick={() => setShowPlans((v) => !v)} aria-expanded={showPlans}>
+              {bill.plan_name} plan, {bill.links_used}{bill.link_limit ? ` of ${bill.link_limit}` : ""} links
+            </button>
+          )}
           <button className="link" onClick={onSignOut}>Sign out</button>
         </div>
       </header>
 
-      <CreateForm onCreated={(l) => { setLinks((ls) => [l, ...(ls || [])]); setSelected(l.code); }} />
+      {showPlans && bill && <Billing bill={bill} onRefresh={loadBilling} onClose={() => setShowPlans(false)} />}
+
+      <CreateForm onUpgrade={() => setShowPlans(true)}
+        onCreated={(l) => { setLinks((ls) => [l, ...(ls || [])]); setSelected(l.code); loadBilling(); }} />
       {error && <p className="error" role="alert">{error}</p>}
 
       <div className="cols">
@@ -202,7 +220,7 @@ export default function Dashboard({ user, onSignOut }) {
 
         {current && (
           <Detail link={current} onChanged={replace}
-            onDeleted={(code) => { setLinks((ls) => ls.filter((l) => l.code !== code)); setSelected(null); setTimeout(load, 0); }} />
+            onDeleted={(code) => { setLinks((ls) => ls.filter((l) => l.code !== code)); setSelected(null); setTimeout(load, 0); loadBilling(); }} />
         )}
       </div>
     </div>

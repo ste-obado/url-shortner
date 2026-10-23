@@ -7,6 +7,7 @@ from ..cache import cache
 from ..config import settings
 from ..database import get_db
 from ..models import Click, Link, User
+from ..plans import PLANS, effective_plan
 from ..ratelimit import rate_limit_user
 from ..schemas import LinkCreate, LinkOut, LinkUpdate
 from ..security import get_current_user
@@ -34,6 +35,11 @@ def get_owned_link(code: str, db: Session, user: User) -> Link:
 
 @router.post("", response_model=LinkOut, status_code=201, dependencies=[Depends(rate_limit_user(10, 60, "shorten"))])
 def create_link(data: LinkCreate, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    plan = effective_plan(user)
+    limit = PLANS[plan]["link_limit"]
+    if limit is not None and db.query(func.count(Link.id)).filter(Link.owner_id == user.id).scalar() >= limit:
+        raise HTTPException(402, f"You've used all {limit} links on the {PLANS[plan]['name']} plan. Upgrade to add more.")
+
     expires_at = as_utc(data.expires_at)
     if data.custom_code and db.query(Link).filter(Link.code == data.custom_code).first():
         raise HTTPException(status.HTTP_409_CONFLICT, "That code is taken, try another")
